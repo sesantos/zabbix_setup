@@ -81,7 +81,7 @@ When the parameters of ***setup.yaml*** are all set the template is loaded and t
 ![Alt text](/gifs/zabbix-load-template-GUI.gif) <br>
 
 
-3 - Create a discovery rule for SR Linux under: ***Configuration -> Discovery -> Create Discovery rule ***
+3 - Create a discovery rule for SR Linux under: ***Configuration -> Discovery -> Create Discovery rule***
 
 ![Alt text](/gifs/zabbix-create-drule.gif) <br>
 
