@@ -61,8 +61,8 @@ srlinux_setup:
     ip_range: "172.18.18.4-6"
     user_name: "admin"
     password: "admin"
-    json_rpc_port: "80"
-    proto: "http"
+    json_rpc_port: "443"
+    proto: "https"
     snmp_community: "public"
 
 ```
