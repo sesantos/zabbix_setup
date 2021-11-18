@@ -9,10 +9,12 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 ```
 git clone https://github.com/zabbix/zabbix-docker.git
+cd zabbix-docker
 mkdir -p zbx_env/usr/share/zabbix/modules
 ```
 
 # Create a Zabbix instance
+
 ```
 docker-compose -f docker-compose_v3_ubuntu_mysql_latest.yaml up -d
 ```
@@ -24,7 +26,7 @@ docker-compose -f docker-compose_v3_ubuntu_mysql_latest.yaml up -d
 for i in `sudo docker network ls -f NAME=zabbix* -q `; do for j in `sudo bridge link | grep $i |  cut -d : -f 2 | cut -d @ -f 1`;do sudo ethtool --offload $j rx off tx off; done; done
 ```
 
-# Connect to your Zabbix Instance on HTTP interface
+# Connect to your Zabbix Instance on HTTP web interface
 
 ### Login with:
 username: ***Admin*** <br>
@@ -42,7 +44,7 @@ python3.6 setup.py install
 
 The Zabbix SR Linux template is available [here](https://github.com/sesantos/zabbix_sdk/blob/master/templates/srlinux_template.yaml) under /templates
 
-## Load the SR Linux template and setup the Zabbix for node discovery
+### Load the SR Linux template and setup the Zabbix for node discovery
 
 It can be loaded using the Web Gui under Templates or using the zabbix_sdk.
 
@@ -60,6 +62,7 @@ srlinux_setup:
     user_name: "admin"
     password: "admin"
     json_rpc_port: "80"
+    proto: "http"
     snmp_community: "public"
 
 ```
