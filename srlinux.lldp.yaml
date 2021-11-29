@@ -1,0 +1,453 @@
+zabbix_export:
+  version: '5.4'
+  date: '2021-11-29T04:59:35Z'
+  groups:
+    -
+      uuid: 7f8dcfcaa54f414b9cf35479984e2796
+      name: nokia.netops.srl
+  templates:
+    -
+      uuid: 2af817a0f38244e2a956b01c37b606a0
+      template: nokia.netops.srl.lldp
+      name: nokia.netops.srl.lldp
+      groups:
+        -
+          name: nokia.netops.srl
+      items:
+        -
+          uuid: c481d902f6774fe28da6ebda9f0a43bc
+          name: 'LLDP admin state'
+          type: HTTP_AGENT
+          key: nokia.netops.srl.lldp.admin
+          authtype: BASIC
+          username: '{$USER}'
+          password: '{$PWD}'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.body.result[0].["admin-state"]'
+            -
+              type: STR_REPLACE
+              parameters:
+                - enable
+                - '1'
+            -
+              type: STR_REPLACE
+              parameters:
+                - disable
+                - '0'
+          url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+          posts: |
+            {
+              "jsonrpc": "2.0",
+              "id": 0,
+              "method": "get",
+              "params": {
+                  "commands": [
+                      {
+                          "path": "/system/lldp",
+                          "datastore": "state",
+                          "recursive": true
+                      }
+                  ]
+              }
+            }
+          post_type: JSON
+          request_method: POST
+          output_format: JSON
+          triggers:
+            -
+              uuid: 8d9c514c4a9f49c48bb9c22fc72b548c
+              expression: 'last(/nokia.netops.srl.lldp/nokia.netops.srl.lldp.admin,#31)=0'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/nokia.netops.srl.lldp/nokia.netops.srl.lldp.admin,#1)=1'
+              name: 'LLDP admin down more than 30 min'
+              priority: WARNING
+              description: 'LLDP administratively disabled for more than 30 min.'
+              manual_close: 'YES'
+        -
+          uuid: 68985c420a4c4e9292be987ed3c15f04
+          name: 'LLDP number of interfaces'
+          type: HTTP_AGENT
+          key: nokia.netops.srl.lldp.numofinf
+          delay: 15s
+          authtype: BASIC
+          username: '{$USER}'
+          password: '{$PWD}'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.body.result[0].interface.length()'
+          url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+          posts: |
+            {
+              "jsonrpc": "2.0",
+              "id": 0,
+              "method": "get",
+              "params": {
+                  "commands": [
+                      {
+                          "path": "/system/lldp",
+                          "datastore": "state",
+                          "recursive": true
+                      }
+                  ]
+              }
+            }
+          post_type: JSON
+          request_method: POST
+          output_format: JSON
+          triggers:
+            -
+              uuid: cbc1a3163a614f89b60856d0cee1f199
+              expression: change(/nokia.netops.srl.lldp/nokia.netops.srl.lldp.numofinf)>=1
+              recovery_mode: NONE
+              name: 'LLDP new inf(s) was added'
+              priority: INFO
+              description: 'New interface(s) was added under /system/lldp'
+              manual_close: 'YES'
+            -
+              uuid: 58cc7fb8e1bb4788b3656ba0959939ef
+              expression: change(/nokia.netops.srl.lldp/nokia.netops.srl.lldp.numofinf)<0
+              recovery_mode: NONE
+              name: 'LLDP one or more inf(s) was removed'
+              priority: INFO
+              description: 'One or mote interfaces were removed from /system/lldp'
+              manual_close: 'YES'
+      discovery_rules:
+        -
+          uuid: f8b0391b689842c699f803cb0e30d0d8
+          name: nokia.netops.srl.lldp.interfaces
+          type: HTTP_AGENT
+          key: 'nokia.netops.srl.lldp.interface.[{#NAME}]'
+          delay: 5m
+          authtype: BASIC
+          username: '{$USER}'
+          password: '{$PWD}'
+          filter:
+            conditions:
+              -
+                macro: '{#ADMINSTATE}'
+                value: ^enable$
+                formulaid: A
+              -
+                macro: '{#OPERSTATE}'
+                value: ^up$
+                formulaid: D
+              -
+                macro: '{#NAME}'
+                value: '^ethernet.*'
+                formulaid: B
+              -
+                macro: '{#NAME}'
+                value: '^mgmt.*'
+                formulaid: C
+          item_prototypes:
+            -
+              uuid: 4cac1be55263456b8699b32d58cc97ef
+              name: 'nokia.netops.srl.lldp.interfaces.oper-state.[{#NAME}]'
+              type: HTTP_AGENT
+              key: 'nokia.netops.srl.lldp.interfaces.oper-state.[{#NAME}]'
+              delay: 30s
+              authtype: BASIC
+              username: '{$USER}'
+              password: '{$PWD}'
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.result[0]'
+                -
+                  type: REGEX
+                  parameters:
+                    - up
+                    - '1'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+              posts: |
+                {
+                  "jsonrpc": "2.0",
+                  "id": 0,
+                  "method": "get",
+                  "params": {
+                      "commands": [
+                          {
+                              "path": "/system/lldp/interface[name={#NAME}]/oper-state",
+                              "datastore": "state",
+                              "recursive": true
+                          }
+                      ]
+                  }
+                }
+              post_type: JSON
+              request_method: POST
+            -
+              uuid: 6a1bc2e67f6e4da795279575674f4aed
+              name: 'nokia.netops.srl.lldp.interfaces.statistics.frame-rate-in.[{#NAME}]'
+              type: HTTP_AGENT
+              key: 'nokia.netops.srl.lldp.interfaces.statistics.frame-rate-in.[{#NAME}]'
+              delay: 30s
+              authtype: BASIC
+              username: '{$USER}'
+              password: '{$PWD}'
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.result[0]'
+                -
+                  type: SIMPLE_CHANGE
+                  parameters:
+                    - ''
+              url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+              posts: |
+                {
+                  "jsonrpc": "2.0",
+                  "id": 0,
+                  "method": "get",
+                  "params": {
+                      "commands": [
+                          {
+                              "path": "/system/lldp/interface[name={#NAME}]/statistics/frame-in",
+                              "datastore": "state",
+                              "recursive": true
+                          }
+                      ]
+                  }
+                }
+              post_type: JSON
+              request_method: POST
+            -
+              uuid: 5af27241f3f4476ba4b4f4bd88bee99f
+              name: 'nokia.netops.srl.lldp.interfaces.statistics.frame-rate-out.[{#NAME}]'
+              type: HTTP_AGENT
+              key: 'nokia.netops.srl.lldp.interfaces.statistics.frame-rate-out.[{#NAME}]'
+              delay: 30s
+              authtype: BASIC
+              username: '{$USER}'
+              password: '{$PWD}'
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.result[0]'
+                -
+                  type: SIMPLE_CHANGE
+                  parameters:
+                    - ''
+              url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+              posts: |
+                {
+                  "jsonrpc": "2.0",
+                  "id": 0,
+                  "method": "get",
+                  "params": {
+                      "commands": [
+                          {
+                              "path": "/system/lldp/interface[name={#NAME}]/statistics/frame-out",
+                              "datastore": "state",
+                              "recursive": true
+                          }
+                      ]
+                  }
+                }
+              post_type: JSON
+              request_method: POST
+          timeout: 60s
+          url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+          posts: |
+            {
+              "jsonrpc": "2.0",
+              "id": 0,
+              "method": "get",
+              "params": {
+                  "commands": [
+                      {
+                          "path": "/system/lldp/interface[name=*]",
+                          "datastore": "state",
+                          "recursive": true
+                      }
+                  ]
+              }
+            }
+          post_type: JSON
+          request_method: POST
+          lld_macro_paths:
+            -
+              lld_macro: '{#ADMINSTATE}'
+              path: '$.["admin-state"]'
+            -
+              lld_macro: '{#NAME}'
+              path: $.name
+            -
+              lld_macro: '{#NEIGHBOR}'
+              path: $.neighbor
+            -
+              lld_macro: '{#OPERSTATE}'
+              path: '$.["oper-state"]'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.result[0].interface'
+        -
+          uuid: cf516dadf64e48c1ab06903a305487fa
+          name: 'nokia.netops.srl.lldp.neighbors.[{#INFNAME},{#NEIGHBORSYSTEMNAME}]'
+          type: HTTP_AGENT
+          key: 'nokia.netops.srl.lldp.neighbors.[{#INFNAME},{#NEIGHBORSYSTEMNAME}]'
+          delay: 5m
+          authtype: BASIC
+          username: '{$USER}'
+          password: '{$PWD}'
+          filter:
+            conditions:
+              -
+                macro: '{#INFNAME}'
+                value: '^mgmt.*'
+                formulaid: A
+              -
+                macro: '{#INFNAME}'
+                value: '^ethernet.*'
+                formulaid: B
+          item_prototypes:
+            -
+              uuid: 357afa360e7646b99aa94f71f707aad2
+              name: 'nokia.netops.srl.lldp.neighbors.uptime.[{#INFNAME},{#NEIGHBORSYSTEMNAME}]'
+              type: HTTP_AGENT
+              key: 'nokia.netops.srl.lldp.neighbors.uptime.[{#INFNAME},{#NEIGHBORSYSTEMNAME}]'
+              delay: 15s
+              trends: '0'
+              value_type: TEXT
+              authtype: BASIC
+              username: '{$USER}'
+              password: '{$PWD}'
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.result[0]'
+                -
+                  type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var receivedJSON= JSON.parse(value);
+                      
+                          const fm = new Date(receivedJSON["first-message"]);
+                          const lu = new Date(receivedJSON["last-update"]);
+                          const diffTime = Math.abs(lu - fm);
+                          const uptimed = Math.trunc(diffTime / 1000 / 3600 / 24);
+                          const uptimeh = Math.trunc(diffTime / 1000 / 3600 -  24 * uptimed);
+                          const uptimem = Math.trunc(diffTime / 1000 / 60  -  60 * uptimeh -  24 * 60 * uptimed);
+                          const uptimes = Math.trunc(diffTime / 1000 -  3600 * uptimeh -  24 * 3600 * uptimed - 60 * uptimem);;
+                          const uptime = uptimed.toString() + " Days " + uptimeh.toString() + " Hours " + uptimem.toString() + " Min " + uptimes.toString() + " Sec"
+                          // debug
+                          // console.log(uptime)
+                                      
+                          return JSON.stringify(uptime);
+              url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+              posts: |
+                {
+                  "jsonrpc": "2.0",
+                  "id": 0,
+                  "method": "get",
+                  "params": {
+                      "commands": [
+                          {
+                              "path": "/system/lldp/interface[name={#INFNAME}]/neighbor[id={#NEIGHBORID}]",
+                              "datastore": "state",
+                              "recursive": true
+                          }
+                      ]
+                  }
+                }
+              post_type: JSON
+              request_method: POST
+          timeout: 60s
+          url: '{$PROTO}://{HOST.CONN}:{$JSONPORT}/jsonrpc'
+          posts: |
+            {
+              "jsonrpc": "2.0",
+              "id": 0,
+              "method": "get",
+              "params": {
+                  "commands": [
+                      {
+                          "path": "/system/lldp/interface[name=*]/neighbor[id=*]",
+                          "datastore": "state",
+                          "recursive": true
+                      }
+                  ]
+              }
+            }
+          post_type: JSON
+          request_method: POST
+          lld_macro_paths:
+            -
+              lld_macro: '{#INFNAME}'
+              path: $.infname
+            -
+              lld_macro: '{#NEIGHBORID}'
+              path: $.neighborid
+            -
+              lld_macro: '{#NEIGHBORSYSTEMNAME}'
+              path: $.neighborsystemname
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.result[0].interface'
+            -
+              type: JAVASCRIPT
+              parameters:
+                - |2
+                      // create an empty array to flattern info about LLDP neighbors
+                      var lldpNeighbors = []; 
+                  
+                      var receivedJSON= JSON.parse(value);
+                      for (i = 0; i < receivedJSON.length; i++) {
+                          if (receivedJSON[i].hasOwnProperty("neighbor")){
+                              var name = receivedJSON[i].name;
+                              var neighbors = receivedJSON[i].neighbor;
+                              // for debug
+                              //console.log(i)
+                              for (n = 0; n < neighbors.length; n++) {
+                                  lldpNeighbors.push({
+                                      infname: name, 
+                                      neighborid: neighbors[n].id,
+                                      neighborsystemname: neighbors[n]["system-name"],
+                                      firstmessage: neighbors[n]["first-message"],
+                                      lastupdate: neighbors[n]["last-update"],
+                                  })
+                                  
+                              }
+                  
+                          }
+                  
+                      }
+                      // for debug
+                      // console.log(JSON.stringify(lldpNeighbors))
+                      return JSON.stringify(lldpNeighbors);
+      tags:
+        -
+          tag: xpath
+          value: /system/lldp
+      macros:
+        -
+          macro: '{$JSONPORT}'
+          value: '443'
+          description: 'JSON RPC port under /system/json-rpc-server/network-instance[name=mgmt]/https/port'
+        -
+          macro: '{$PROTO}'
+          value: https
+          description: 'http OR https?'
+        -
+          macro: '{$PWD}'
+          value: admin
+          description: default==admin
+        -
+          macro: '{$USER}'
+          value: admin
+          description: default==admin
