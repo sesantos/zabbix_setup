@@ -3,7 +3,7 @@
 
  This page  will guide you through the installation and configuration of a Zabbix instance for Nokia SR Linux device managament.<br>
  A Zabbix template for SR Linux devices is available [here](https://github.com/sesantos/zabbix_sdk/blob/master/templates/srlinux_template.yaml) <br>
- If you need to edit or change the template an example is presented [here](how_to_edit_SR_Linux_zabbix_template.md) <br><br>
+ If you need to edit or change the template an example is presented [here](https://github.com/azyablov/crafting_srl_zabbix_template#readme) <br><br>
 
 
 # Download docker-compose 
