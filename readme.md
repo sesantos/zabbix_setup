@@ -18,7 +18,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 ```
 git clone https://github.com/zabbix/zabbix-docker.git
 cd zabbix-docker
-git checkout 5.4
+git checkout -b 5.4
 mkdir -p zbx_env/usr/share/zabbix/modules
 ```
 
